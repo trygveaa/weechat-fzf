@@ -17,9 +17,7 @@ def print_error(message: str) -> None:
 def fzf_process_cb(
     data: str, command: str, return_code: int, out: str, err: str
 ) -> int:
-    if return_code == 130:
-        return weechat.WEECHAT_RC_OK
-    if return_code == weechat.WEECHAT_HOOK_PROCESS_ERROR or return_code > 0 or err:
+    if return_code == weechat.WEECHAT_HOOK_PROCESS_ERROR or return_code == 2 or err:
         print_error("Error running fzf (code {}): {}".format(return_code, err))
         return weechat.WEECHAT_RC_OK
     if out != "":
