@@ -29,7 +29,7 @@ def fzf_process_cb(
 def fzf_command_cb(data: str, buffer: str, args: str) -> int:
     cmd = (
         "fzf-tmux -- --delimiter='\t' --with-nth=3.. "
-        "--preview='tail -$FZF_PREVIEW_LINES {2} 2>/dev/null'"
+        "--preview='tail -$LINES {2} 2>/dev/null'"
     )
     hook = weechat.hook_process_hashtable(cmd, {"stdin": "1"}, 0, "fzf_process_cb", "")
     for buffer_info in buffers():
