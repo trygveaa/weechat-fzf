@@ -21,13 +21,16 @@ def fzf_process_cb(
         print_error("Error running fzf (code {}): {}".format(return_code, err))
         return weechat.WEECHAT_RC_OK
     if out != "":
-        pointer, number, name = out.split("\t")
+        pointer, _ = out.split("\t", 1)
         weechat.buffer_set(pointer, "display", "1")
     return weechat.WEECHAT_RC_OK
 
 
 def fzf_command_cb(data: str, buffer: str, args: str) -> int:
-    cmd = "fzf-tmux -- --delimiter='\t' --with-nth=2.."
+    cmd = (
+        "fzf-tmux -- --delimiter='\t' --with-nth=3.. "
+        "--preview='tail -$FZF_PREVIEW_LINES {2} 2>/dev/null'"
+    )
     hook = weechat.hook_process_hashtable(cmd, {"stdin": "1"}, 0, "fzf_process_cb", "")
     for buffer_info in buffers():
         weechat.hook_set(hook, "stdin", "\t".join(buffer_info) + "\n")
@@ -35,14 +38,22 @@ def fzf_command_cb(data: str, buffer: str, args: str) -> int:
     return weechat.WEECHAT_RC_OK
 
 
-def buffers() -> Iterator[Tuple[str, str, str]]:
-    infolist = weechat.infolist_get("buffer", "", "")
-    while weechat.infolist_next(infolist):
-        pointer = weechat.infolist_pointer(infolist, "pointer")
-        number = weechat.infolist_integer(infolist, "number")
-        name = weechat.infolist_string(infolist, "name")
-        yield (pointer, str(number), name)
-    weechat.infolist_free(infolist)
+def buffers() -> Iterator[Tuple[str, str, str, str]]:
+    logger_filenames = {}
+    logger_infolist = weechat.infolist_get("logger_buffer", "", "")
+    while weechat.infolist_next(logger_infolist):
+        buffer = weechat.infolist_pointer(logger_infolist, "buffer")
+        filename = weechat.infolist_string(logger_infolist, "log_filename")
+        logger_filenames[buffer] = filename
+    weechat.infolist_free(logger_infolist)
+
+    buffer_infolist = weechat.infolist_get("buffer", "", "")
+    while weechat.infolist_next(buffer_infolist):
+        pointer = weechat.infolist_pointer(buffer_infolist, "pointer")
+        number = weechat.infolist_integer(buffer_infolist, "number")
+        name = weechat.infolist_string(buffer_infolist, "name")
+        yield (pointer, logger_filenames.get(pointer, ""), str(number), name)
+    weechat.infolist_free(buffer_infolist)
 
 
 def main() -> None:
